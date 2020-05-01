@@ -1,0 +1,3 @@
+[submodule "lib/pypret"]
+	path = lib/pypret
+	url = git@github.com:ChosenNoob/pypret.git
