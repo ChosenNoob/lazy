@@ -9,6 +9,7 @@ maxIp = IPv4Address('192.168.255.255')
 port = 1234
 
 sock = socket(AF_INET, SOCK_STREAM)
+sock.settimeout(0)
 
 while ip <= maxIp:
 	print("Connecting to " + ip.compressed)
