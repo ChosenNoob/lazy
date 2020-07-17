@@ -1,12 +1,13 @@
 #!/bin/python
 
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, gethostname
 from pypret.interpreter import Interpreter
 from sys import argv
 from multiprocessing import Pool, Process
 from ipaddress import IPv4Address
+from os.path import isfile
 
-port = 1234
+PORT = 1234
 
 def print_help():
 	help_str = '''Usage: lazy [mode]
@@ -15,7 +16,59 @@ mode options:
 	--server'''
 	print(help_str)
 
-def server_conn_worker(client_conn, client_addr):
+# Client mode
+def connect_to_host(hostname):
+	# Tries to connect to given hostname, 
+	# returns socket if succeeds 
+	# returns None if fails
+	sock = socket(AF_INET, SOCK_STREAM)
+	conn_result = sock.connect_ex((hostname, PORT))
+	if conn_result == 0:
+		return sock
+	else:
+		sock.close()
+		return None
+
+def connect_new_host():
+	# Promts user for new hostname, 
+	# returns socket if succeeds to connect
+	# returns None if fails
+	hostname = input("Enter the hostname:")
+	conn_result = connect_to_host(hostname)
+	while conn_result == None:
+		hostname = input("Couldn't connect. Enter the hostname:")
+		conn_result = connect_to_host(hostname)
+
+	with open("hostnames.txt", "a") as hostname_file:
+		print(hostname, file=hostname_file)
+	return conn_result	
+
+def connect_existing_hosts():
+	# Tries to connect existing hostnames, 
+	# returns socket if succeeds to connect
+	# returns None if fails
+	if isfile('hostnames.txt'):
+		with open("hostnames.txt") as hostname_file:
+			hostnames = hostname_file.readlines()
+			for hostname in hostnames:
+				return connect_to_host(hostname)
+	
+def conn_handling(sock):
+	print("Connected")
+	sock.close()
+
+def run_as_client():
+	conn_result = connect_existing_hosts()
+	if conn_result != None:
+		conn_handling(conn_result)
+	else:
+		conn_result = connect_new_host()
+		if conn_result != None:
+			conn_handling(conn_result)
+
+# Server mode
+def server_worker(client_conn, client_addr):
+	# Thread that handles each client connection
 	print('Handling ' + str(client_addr))
 	while 1:
 		data = client_conn.recv(1024)
@@ -24,43 +77,19 @@ def server_conn_worker(client_conn, client_addr):
 	client_conn.close()
 
 def run_as_server():
-	server_socket = socket(AF_INET, SOCK_STREAM)
-	server_socket.bind(('', port))
-	server_socket.listen(1)
+	# Listens and creates server_workers for each connection
+	sock = socket(AF_INET, SOCK_STREAM)
+	sock.bind(('', PORT))
+	sock.listen(1)
+	print("Hostname {}".format(gethostname()))
 	print("Listening...")
 
 	while True:
-		client_conn, client_addr = server_socket.accept()
-		worker = Process(target=server_conn_worker, args=(client_conn, client_addr))
+		client_conn, client_addr = sock.accept()
+		worker = Process(target=server_worker, args=(client_conn, client_addr))
 		worker.start()
-	server_socket.close()
+	sock.close()
 
-def client_conn_worker(ip):
-	ip = IPv4Address(ip)
-	print('Trying ip adress ' + str(ip))
-	client_socket = socket(AF_INET, SOCK_STREAM)
-	# client_socket.settimeout(5)
-	client_socket.settimeout(1)
-	result = None
-	try:
-		client_socket.connect((ip.compressed, port))
-		result = ip
-	except Exception:
-		pass
-	client_socket.close()
-	return result
-
-def run_as_client():
-	minIp = 3232301313
-	maxIp = 3232301567
-	with Pool(maxIp - minIp + 1) as pool:
-		result = pool.map(client_conn_worker, range(minIp, maxIp + 1))
-		# result = pool.map(client_conn_worker, [3232235885])
-		print(result)
-
-	for i in result:
-		if i != None:
-			print('Success')
 def main():
 	if len(argv) == 1:
 		print('Assuming client mode')
@@ -77,9 +106,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
-# def hello():
-# 	print("Hello World!")
-
-# interpreter = Interpreter([hello])
-# interpreter.run()
