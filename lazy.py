@@ -2,7 +2,6 @@
 
 import subprocess
 from socket import socket, AF_INET, SOCK_STREAM, gethostname
-from pypret.interpreter import Interpreter
 from sys import argv
 from multiprocessing import Pool, Process
 from ipaddress import IPv4Address
@@ -54,8 +53,9 @@ def connect_existing_hosts():
 			hostnames = hostname_file.readlines()
 			print(hostnames)
 			for hostname in hostnames:
-				return connect_to_host(hostname.strip())
-
+				conn_result = connect_to_host(hostname.strip())
+				if conn_result:
+					return conn_result
 def conn_handling(sock):
 	print("Connected")
 	while True:
@@ -102,10 +102,10 @@ def server_worker(client_conn, client_addr):
 			subprocess.run(commands[request])
 			client_conn.sendall("success".encode())
 		except KeyError as e:
-			print(e)
+			print("KeyError" + str(e))
 			client_conn.sendall("not a command".encode())
 		except Exception as e:
-			print(e)
+			print("Exception" + str(e))
 			client_conn.sendall("runtime error".encode())
 
 	client_conn.close()
