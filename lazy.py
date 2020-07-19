@@ -61,7 +61,7 @@ def conn_handling(sock):
 	while True:
 		request = input("<<<")
 		sock.sendall(request.encode())
-		response = sock.recv(1024).decode()
+		response = sock.recv(1024).decode().strip()
 		print(response)
 	sock.close()
 
@@ -83,7 +83,7 @@ def load_commands():
 			lines = command_file.readlines()
 			for line in lines:
 				split_line = line.split(" ", 1)
-				commands[split_line[0]] = split_line[1].strip()
+				commands[split_line[0]] = split_line[1].strip().split(" ")
 	print(commands)
 	return commands
 
@@ -96,17 +96,17 @@ def server_worker(client_conn, client_addr):
 		if not data: 
 			print("Connection closed by {}".format(client_addr))
 			break
-		request = data.decode()
+		request = data.decode().strip()
 		print("{} requested {}".format(client_addr, request))
 		try:
 			subprocess.run(commands[request])
-			client_conn.sendall("success".encode())
+			client_conn.sendall("success\n".encode())
 		except KeyError as e:
 			print("KeyError" + str(e))
-			client_conn.sendall("not a command".encode())
+			client_conn.sendall("not a command\n".encode())
 		except Exception as e:
 			print("Exception" + str(e))
-			client_conn.sendall("runtime error".encode())
+			client_conn.sendall("runtime error\n".encode())
 
 	client_conn.close()
 

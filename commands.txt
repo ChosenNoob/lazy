@@ -1,1 +1,2 @@
 rb reboot
+echo echo "Hello World!"

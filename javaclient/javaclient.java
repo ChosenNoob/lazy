@@ -1,35 +1,31 @@
 import java.net.Socket;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.List;
 import java.io.BufferedReader;
+import java.io.PrintWriter;
 import java.io.InputStreamReader;
+
 class javaclient{
 
 	public static final int PORT = 1234;
 
 	public static void main(String[] args) {
-
-		Socket connResult = connectExistingHosts();
-		if (connResult != null) {
-			connHandling(connResult);
-		}
-		else
-		{
-			connResult = connectNewHost();
+		try {
+			Socket connResult = connectExistingHosts();
 			if (connResult != null) {
 				connHandling(connResult);
 			}
-		}
-		try
-		{
+			else {
+				connResult = connectNewHost();
+				if (connResult != null) {
+					connHandling(connResult);
+				}
+			}
 			connResult.close();
 		}
-		catch(Exception e)
-		{
+		catch(Exception e) {
 			e.printStackTrace();
 		}
 	}	
@@ -67,11 +63,10 @@ class javaclient{
 	private static void connHandling(Socket sock) {
 		System.out.println("Connected");
 		try{
-            BufferedReader sockInput =
-                new BufferedReader(
-                    new InputStreamReader(sock.getInputStream()));
+            BufferedReader sockInput = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+            PrintWriter sockOutput = new PrintWriter(sock.getOutputStream(), true);
 			// DataInputStream sockInput = new DataInputStream(sock.getInputStream());
-			DataOutputStream sockOutput = new DataOutputStream(sock.getOutputStream());			
+			// DataOutputStream sockOutput = new DataOutputStream(sock.getOutputStream());			
 
 			BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
 			String request, response;
@@ -79,8 +74,8 @@ class javaclient{
 			while (true) {
 				System.out.print("<<<");
 				request = stdin.readLine();
-				sockOutput.writeUTF(request);
-				sockOutput.flush();
+				sockOutput.println(request);
+				// sockOutput.flush();
 				response = sockInput.readLine();
 				System.out.println(response);
 			}
@@ -97,4 +92,9 @@ class javaclient{
 		// 	print(response)
 		// sock.close()
 	}
+	// private static String readResponse(sock)
+	// {
+	// 	Inp
+	// 	return null;
+	// }
 }
